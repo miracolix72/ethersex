@@ -86,7 +86,7 @@ eeprom_init (void)
     eeprom_save_P (mac, PSTR(CONF_ETHERRAPE_MAC), 6);
 #endif
 
-#if (defined(IPV4_SUPPORT) && !defined(BOOTP_SUPPORT)) || defined(IPV6_STATIC_SUPPORT)
+#if (defined(IPV4_SUPPORT) && !defined(BOOTP_SUPPORT) && !defined(DHCP_SUPPORT)) || defined(IPV6_STATIC_SUPPORT)
     set_CONF_ETHERRAPE_IP(&ip);
     eeprom_save(ip, &ip, IPADDR_LEN);
 #ifdef ETHERNET_SUPPORT
@@ -131,6 +131,10 @@ eeprom_init (void)
 	eeprom_save_P(jabber_password, PSTR(CONF_JABBER_PASSWORD), JABBER_VALUESIZE);
 	eeprom_save_P(jabber_resource, PSTR(CONF_JABBER_RESOURCE), JABBER_VALUESIZE);
 	eeprom_save_P(jabber_hostname, PSTR(CONF_JABBER_HOSTNAME), JABBER_VALUESIZE);
+#endif
+
+#ifdef MOTD_SUPPORT
+	eeprom_save_P(motd_text, PSTR(CONF_MOTD_DEFAULT), MOTD_VALUESIZE);
 #endif
     eeprom_update_chksum();
 }

@@ -28,7 +28,7 @@ single_menu_mode=
 set -h +o posix
 
 ### use GNU sed from macports instead of BSD sed on MacOS X
-if [ x$OSTYPE = x"darwin10.0" ]; then
+if [ x$OSTYPE = x"darwin10.0" ] || [ x$OSTYPE = x"FreeBSD" ] ; then
     SED=gsed
 else
     SED=sed
@@ -44,7 +44,7 @@ fi
 function set_x_info () {
     eval x=\$$1
     if [ -z "$x" ]; then
-	eval `$SED -n -e 's/# \(.*\) is not set.*/\1=n/' -e "/^$1=/p" arch/$ARCH/defconfig`
+#	eval `$SED -n -e 's/# \(.*\) is not set.*/\1=n/' -e "/^$1=/p" arch/$ARCH/defconfig`
 	eval x=\${$1:-\"$2\"}
 	eval $1=$x
 	eval INFO_$1="' (NEW)'"
@@ -1057,21 +1057,25 @@ get_dflt_config () {
 Select the default profile you wish to load. \
 <Esc><Esc> to abort." \
 			15 70 7 \
-			defconfig	  "Etherrape"			0 \
-			Jackalope	  "Jackalope (Etherrape extension)"	0	\
-			ethersex	  "Standard Ethersex"		0 \
-			bootloader	  "Ethernet Bootloader"		0 \
-			netio		  "Pollin AVR Net-IO"		0 \
-			radig		  "Radig AVR Webmodul"		0 \
-			fimser		  "Fieldday Instant Messenger"		0 \
-			probot		  "Conrad Probot"		0 \
-			arduino_duemilanove  "Arduino Duemilanove"		0 \
-			rfm12-teensy	  "RFM12 Standalone"		0 \
-			zbus-teensy	  "ZBUS Standalone"		0 \
-			usb-teensy	  "USB (Network) Standalone"	0 \
-			usb-rfm12-dongle  "USB RFM12 Dongle"		0 \
-			no-network	  "No Networking (USB only)"	0 \
+			defconfig	  "Etherrape"					0 \
+			Jackalope	  "Jackalope (Etherrape extension)"		0 \
+			ethersex	  "Standard Ethersex"				0 \
+			bootloader	  "Ethernet Bootloader"				0 \
+			netio		  "Pollin AVR Net-IO"				0 \
+			netio_addon	  "Pollin AVR Net-IO (w/ addon board)"		0 \
+			radig		  "Radig AVR Webmodul"				0 \
+			fimser		  "Fieldday Instant Messenger"			0 \
+			probot		  "Conrad Probot"				0 \
+			arduino_duemilanove "Arduino Duemilanove"			0 \
+			rfm12-teensy	  "RFM12 Standalone"				0 \
+			zbus-teensy	  "ZBUS Standalone"				0 \
+			usb-teensy	  "USB (Network) Standalone"			0 \
+			usb-rfm12-dongle  "USB RFM12 Dongle"				0 \
+			ehaserl		  "EH2010 Ehaserl Badge"			0 \
+			fnordlicht_servo "Fnordlicht Servo"			0 \
+			no-network	  "No Networking (USB only)"			0 \
 			JeeLinkv2	  "Jeelabs JeeLinkv2 (FTDI-ZBUS, RFM12)"	0 \
+			hr20		  "Rondostat HR20/Thermotronic Basic/Thermy"	0 \
 			 2>MCdialog.out
 
 		exit_status=$?
@@ -1405,7 +1409,7 @@ save_configuration () {
 		while [ -n "$2" ]
 		do
 			case "$1" in
-			"$current"*)	if [ -z "$chosen" ]; then
+			"$current")	if [ -z "$chosen" ]; then
 						if [ \! -z "$define_symbol" ]; then
 							echo "$define_symbol=$2" 		>>$CONFIG
 							echo "#define $define_symbol $2"	>>$CONFIG_H

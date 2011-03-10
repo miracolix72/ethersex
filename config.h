@@ -22,25 +22,31 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#include "autoconf.h"
+
 /* network controller hardware bug defines */
 #define ENC28J60_REV4_WORKAROUND
 #define ENC28J60_REV5_WORKAROUND
 
 /* global version defines */
+#define USE_BUILDDATE_VERSION 1
+#define USE_GIT_VERSION 2
+#define USE_RELEASE_VERSION 3
+
 #if VERSION_STRING_CHOICE == USE_BUILDDATE_VERSION
-	#define VERSION_STRING __DATE__ " " __TIME__
+    #define VERSION_STRING __DATE__ " " __TIME__
 #else
 #if VERSION_STRING_CHOICE == USE_GIT_VERSION
-	#define VERSION_STRING VERSION_GIT
+    #define VERSION_STRING VERSION_GIT
 #else
 #if VERSION_STRING_CHOICE == USE_RELEASE_VERSION
-	#define xstr_(s) str_(s)
-	#define str_(s) #s
-	#define VERSION_MAJOR 0
-	#define VERSION_MINOR 2
-	#define VERSION_STRING xstr_(VERSION_MAJOR)"."xstr_(VERSION_MINOR)VERSION_GIT
+    #define xstr_(s) str_(s)
+    #define str_(s) #s
+    #define VERSION_MAJOR 0
+    #define VERSION_MINOR 2
+    #define VERSION_STRING xstr_(VERSION_MAJOR)"."xstr_(VERSION_MINOR)" ("VERSION_GIT")"
 #else
-	#warning No Version choosen
+    #warning No Version choosen
 #endif
 #endif
 #endif
@@ -73,8 +79,6 @@
 
 #define ARCH_AVR	1
 #define ARCH_HOST	2
-
-#include "autoconf.h"
 
 #if ARCH == ARCH_HOST
 #include "core/host/host.h"
@@ -139,7 +143,7 @@
    - STELLA with eeprom load/write support */
 #if (defined(ECMD_PARSER_SUPPORT) && (!defined(TEENSY_SUPPORT)))  \
   || (defined(BOOTP_SUPPORT) && defined(BOOTP_TO_EEPROM_SUPPORT)) \
-  || defined(STELLA_EEPROM)
+  || (defined(STELLA_SUPPORT) && !defined(TEENSY_SUPPORT))
 #  define EEPROM_SUPPORT 1
 #endif
 
@@ -154,6 +158,7 @@
 
 #if defined(VFS_SUPPORT) && defined(VFS_INLINE_SUPPORT)	  \
   && !defined(VFS_SD_SUPPORT) && !defined(VFS_DF_SUPPORT) \
+  && !defined(VFS_EEPROM_SUPPORT)			  \
   && !defined(VFS_EEPROM_RAW_SUPPORT)			  \
   && !defined(VFS_DC3840_SUPPORT)
 #  define VFS_TEENSY 1

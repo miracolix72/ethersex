@@ -7,6 +7,7 @@ SUBDIRS += core/crypto
 SUBDIRS += core/host
 SUBDIRS += core/portio
 SUBDIRS += core/tty
+SUBDIRS += core/gui
 SUBDIRS += core/util
 SUBDIRS += core/vfs
 SUBDIRS += mcuf
@@ -25,10 +26,12 @@ SUBDIRS += hardware/input/ps2
 SUBDIRS += hardware/input/buttons
 SUBDIRS += hardware/io_expander
 SUBDIRS += hardware/ir/rc5
+SUBDIRS += hardware/ir/irmp
 SUBDIRS += hardware/isdn
 SUBDIRS += hardware/lcd
 SUBDIRS += hardware/lcd/s1d15g10
 SUBDIRS += hardware/lcd/ST7626
+SUBDIRS += hardware/lcd/s1d13305
 SUBDIRS += hardware/onewire
 SUBDIRS += hardware/pwm
 SUBDIRS += hardware/sms
@@ -39,9 +42,13 @@ SUBDIRS += hardware/sram
 SUBDIRS += hardware/storage/dataflash
 SUBDIRS += hardware/storage/sd_reader
 SUBDIRS += hardware/zacwire
+SUBDIRS += hardware/ultrasonic
+SUBDIRS += hardware/hbridge
 SUBDIRS += protocols/artnet
 SUBDIRS += protocols/bootp
+SUBDIRS += protocols/dhcp 
 SUBDIRS += protocols/dmx
+SUBDIRS += protocols/fnordlicht
 SUBDIRS += protocols/mdns_sd
 SUBDIRS += protocols/modbus
 SUBDIRS += protocols/mysql
@@ -74,6 +81,7 @@ SUBDIRS += protocols/nmea
 SUBDIRS += protocols/udpIO
 SUBDIRS += protocols/udpstella
 SUBDIRS += protocols/udpcurtain
+SUBDIRS += protocols/cw
 SUBDIRS += services/clock
 SUBDIRS += services/cron
 SUBDIRS += services/dyndns
@@ -83,12 +91,17 @@ SUBDIRS += services/httpd
 SUBDIRS += services/jabber
 SUBDIRS += services/ntp
 SUBDIRS += services/wol
+SUBDIRS += services/motd
+SUBDIRS += services/moodlight
 SUBDIRS += services/stella
 SUBDIRS += services/tftp
 SUBDIRS += services/upnp
 SUBDIRS += services/appsample
 SUBDIRS += services/watchcat
+SUBDIRS += services/vnc
+SUBDIRS += services/watchasync
 SUBDIRS += services/curtain
+SUBDIRS += services/glcdmenu
 
 rootbuild=t
 
@@ -115,7 +128,7 @@ else
 all: compile-$(TARGET)
 	@echo "=======The ethersex project========"
 	@echo "Compiled for: $(MCU) at $(FREQ)Hz"
-	@${TOPDIR}/scripts/size $(TARGET) $(MCU)
+	@$(CONFIG_SHELL) ${TOPDIR}/scripts/size $(TARGET) $(MCU)
 	@echo "==================================="
 endif
 .PHONY: all
@@ -159,10 +172,10 @@ $(ECMD_PARSER_SUPPORT)_META_SRC += protocols/ecmd/ecmd_defs.m4 ${named_pin_simpl
 y_META_SRC += $(y_NP_SIMPLE_META_SRC)
 
 meta.c: $(y_META_SRC)
-	@m4 `scripts/m4-defines` $^ > $@
+	$(M4) `scripts/m4-defines` $^ > $@
 
 meta.h: scripts/meta_header_magic.m4 meta.m4
-	@m4 `scripts/m4-defines` $^ > $@
+	$(M4) `scripts/m4-defines` $^ > $@
 
 ##############################################################################
 
@@ -176,6 +189,14 @@ OBJECTS += $(patsubst %.S,%.o,${ASRC} ${y_ASRC})
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $(OBJECTS) -lc -lm # Pixie Dust!!! (Bug in avr-binutils)
+
+SIZEFUNCARG ?= -e printf -e scanf -e divmod
+size-check: $(OBJECTS) ethersex
+	@for obj in $^; do \
+	    if avr-nm $$obj | grep -q $(SIZEFUNCARG); then \
+		echo -n "$$obj: "; avr-nm $$obj | grep $(SIZEFUNCARG) | cut -c12- | tr '\n' ','; echo ''; \
+	    fi; \
+	done
 
 ##############################################################################
 
@@ -208,7 +229,7 @@ INLINE_FILES :=
 endif
 
 embed/%: embed/%.cpp
-	@if ! avr-cpp -DF_CPU=$(FREQ) -I$(TOPDIR) $< 2> /dev/null > $@.tmp; \
+	@if ! avr-cpp -DF_CPU=$(FREQ) -I$(TOPDIR) -include autoconf.h $< 2> /dev/null > $@.tmp; \
 		then $(RM) $@; echo "--> Don't include $@ ($<)"; \
 	else $(SED) '/^$$/d; /^#[^#]/d' <$@.tmp > $@; \
 	  echo "--> Include $@ ($<)"; fi
@@ -216,7 +237,7 @@ embed/%: embed/%.cpp
 
 
 embed/%: embed/%.m4
-	@if ! m4 `scripts/m4-defines` $< > $@; \
+	@if ! $(M4) `scripts/m4-defines` $< > $@; \
 	  then $(RM) $@; echo "--> Don't include $@ ($<)";\
 		else echo "--> Include $@ ($<)";	fi
 
@@ -229,7 +250,7 @@ embed/%: embed/%.sh
 	$(OBJCOPY) -O binary -R .eeprom $< $@
 ifeq ($(VFS_INLINE_SUPPORT),y)
 	@$(MAKE) -C core/vfs vfs-concat TOPDIR=../.. no_deps=t
-	@core/vfs/do-embed $(INLINE_FILES)
+	$(CONFIG_SHELL) core/vfs/do-embed $(INLINE_FILES)
 endif
 
 ##############################################################################
@@ -245,7 +266,9 @@ endif
 
 
 ##############################################################################
-CONFIG_SHELL := $(shell if [ x"$$OSTYPE" = x"darwin10.0" ]; then echo /opt/local/bin/bash; \
+### Special case for MacOS X (darwin10.0) and FreeBSD
+CONFIG_SHELL := $(shell if [ x"$$OSTYPE" = x"darwin10.0" ] ; then echo /opt/local/bin/bash; \
+          elif [ x"$$OSTYPE" = x"FreeBSD" ]; then echo /usr/local/bin/bash; \
           elif [ -x "$$BASH" ]; then echo $$BASH; \
           elif [ -x /bin/bash ]; then echo /bin/bash; \
           elif [ -x /usr/local/bin/bash ]; then echo /usr/local/bin/bash; \
@@ -305,7 +328,7 @@ PINNING_FILES=pinning/internals/header.m4 \
 	$(wildcard pinning/internals/hackery_$(MCU).m4) \
 	$(wildcard pinning/hardware/$(HARDWARE).m4) pinning/internals/footer.m4
 pinning.c: $(PINNING_FILES) autoconf.h
-	@m4 -I$(TOPDIR)/pinning `scripts/m4-defines` $(PINNING_FILES) > $@
+	$(M4) -I$(TOPDIR)/pinning `scripts/m4-defines` $(PINNING_FILES) > $@
 
 
 ##############################################################################
@@ -317,7 +340,7 @@ show-config: autoconf.h
 	@echo
 	@echo "These modules are currently enabled: "
 	@echo "======================================"
-	@grep -e "^#define .*_SUPPORT" autoconf.h | $(SED) -e "s/^#define / * /" -e "s/_SUPPORT.*//"
+	@$(SED) -e "/^#define \<.*_SUPPORT\>/!d;s/^#define / * /;s/_SUPPORT.*//" autoconf.h 
 
 .PHONY: show-config
 

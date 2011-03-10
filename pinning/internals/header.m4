@@ -37,6 +37,7 @@ define(`port_mask_C', 0)
 define(`port_mask_D', 0)
 define(`port_mask_E', 0)
 define(`port_mask_F', 0)
+define(`port_mask_G', 0)
 
 define(`ddr_mask_A', 0)
 define(`ddr_mask_B', 0)
@@ -44,6 +45,7 @@ define(`ddr_mask_C', 0)
 define(`ddr_mask_D', 0)
 define(`ddr_mask_E', 0)
 define(`ddr_mask_F', 0)
+define(`ddr_mask_G', 0)
 
 dnl forloop-implementation from gnu m4 example scripts ...
 # forloop(var, from, to, stmt) - simple version
@@ -75,6 +77,9 @@ define(`port_mask_'pinname, eval(PM(pinname) | (1 << pinnum)))dnl
   
 ')
 
+define(`RFM12_NO_INT', `dnl
+#define RFM12_USE_POLL 1
+')
 define(`RFM12_USE_INT', `dnl
 /* rfm12 module interrupt line */
 #define RFM12_INT_PIN INT$1
@@ -191,6 +196,21 @@ pin(MOTORCURTAIN_PIN, format(`P%s%d', pinname, itr))
 #define MOCU_SENSORS_PIN_PORT format(PIN%s, pinname)
 ')
 
+define(`STELLA_USE_TIMER', `dnl
+
+/* Configure stella timer*/
+#define STELLA_PRESCALER   		format(_TCCR%s_PRESCALE, $1)
+#define STELLA_TIMSK       		_TIMSK_TIMER$1
+#define STELLA_CS0         		format(CS%s0, $1)
+#define STELLA_CS2         		format(CS%s2, $1)
+#define STELLA_TOIE        		TOIE$1
+#define STELLA_COMPARE_IE  		_OUTPUT_COMPARE_IE$1
+#define STELLA_COMPARE_VECTOR	_VECTOR_OUTPUT_COMPARE$1
+#define STELLA_OVERFLOW_VECTOR  _VECTOR_OVERFLOW$1
+#define STELLA_COMPARE_REG 		_OUTPUT_COMPARE_REG$1
+')
+
+
 define(`STELLA_PORT1_RANGE', `dnl
 define(`pinname', translit(substr(`$1', 1, 1), `a-z', `A-Z'))dnl
 define(`start', substr(`$1', 2, 1))dnl
@@ -238,11 +258,21 @@ define(`ST7626_DATA_PORT', `dnl
   #define ST7626_DATAIN PIN$1
 ')
 
+define(`S1D13305_DATA_PORT', `dnl
+  forloop(`itr', 0, 7, `dnl
+    pin(`S1D13305_DATA_PIN'itr, format(`P%s%d', $1, itr), OUTPUT)
+  ')dnl
+  #define S1D13305_DATA PORT$1
+  #define S1D13305_DATA_DDR DDR$1
+  #define S1D13305_DATAIN PIN$1
+')
 
-ifdef(`conf_RFM12', `define(need_spi, 1)')dnl
-ifdef(`conf_ENC28J60', `define(need_spi, 1)')dnl
-ifdef(`conf_DATAFLASH', `define(need_spi, 1)')dnl
-ifdef(`conf_SD_READER', `define(need_spi, 1)')dnl
+ifdef(`conf_SOFT_SPI', `', `dnl
+  ifdef(`conf_RFM12', `define(need_spi, 1)')dnl
+  ifdef(`conf_ENC28J60', `define(need_spi, 1)')dnl
+  ifdef(`conf_DATAFLASH', `define(need_spi, 1)')dnl
+  ifdef(`conf_SD_READER', `define(need_spi, 1)')dnl
+')
 
 define(`SHT_VOLTAGE_COMPENSATION', `dnl
   #define SHT_VOLTAGE_COMPENSATION_D1 SHT_VOLTAGE_COMPENSATION_D1_$1
@@ -253,7 +283,6 @@ divert(1)
 #ifndef _PINNING_HEADER
 #define _PINNING_HEADER
 
-#undef BOOTLOADER_SECTION
 #define _ISC(n,m) _BV(ISC ## n ## m)
 #define _paste(n,m) n ## m
 #define _paste3(a,b,c) a ## b ## c

@@ -36,6 +36,7 @@
 #include "protocols/ecmd/parser.h"
 
 #include "protocols/ecmd/ecmd-base.h"
+#include "protocols/ecmd/via_tcp/ecmd_state.h"
 
 
 #define xstr(s) str(s)
@@ -47,6 +48,19 @@ int16_t ecmd_parse_command(char *cmd, char *output, uint16_t len)
 #ifdef DEBUG_ECMD
     debug_printf("called ecmd_parse_command %s\n", cmd);
 #endif
+
+#ifdef ECMD_REMOVE_BACKSPACE_SUPPORT
+	uint8_t i = 0;
+	while (cmd[i] != '\0' && i < ECMD_OUTPUTBUF_LENGTH) { // search until end of string
+  		if (cmd[i] =='\b') { // check cmd for backspaces
+    		uint16_t cmdlen = strlen(cmd+i);
+    		memmove(cmd + i - 1, cmd + i + 1, cmdlen); // we found a backspace, so we move all chars backwards
+    		i--;  // and decrement char counter
+  		} else {
+    		i++; // goto char
+  		}
+	}
+#endif /* ECMD_REMOVE_BACKSPACE_SUPPORT */
 
 #ifdef ALIASCMD_SUPPORT
     if (cmd[0] == '$') { // alias command names start with $
@@ -64,7 +78,7 @@ int16_t ecmd_parse_command(char *cmd, char *output, uint16_t len)
 #endif
 	}
     }
-#endif
+#endif /* ALIASCMD_SUPPORT */
 
     if (strlen(cmd) < 2) {
 #ifdef DEBUG_ECMD
@@ -134,6 +148,9 @@ int16_t ecmd_parse_command(char *cmd, char *output, uint16_t len)
 
 #ifdef FREE_SUPPORT
 
+extern char *__brkval;
+extern unsigned char __heap_start;
+
 int16_t parse_cmd_free(char *cmd, char *output, uint16_t len)
 {
 	/* Docu March 2009: http://www.nongnu.org/avr-libc/user-manual/malloc.html
@@ -145,8 +162,6 @@ int16_t parse_cmd_free(char *cmd, char *output, uint16_t len)
 	Size of network packet frames is stored in NET_MAX_FRAME_LENGTH
 	*/
 
-	extern char *__brkval;
-	extern unsigned char __heap_start;
 	size_t f = (size_t)(__brkval ? (size_t)__brkval : (size_t)&__heap_start);
 	size_t allram = RAMEND;
 

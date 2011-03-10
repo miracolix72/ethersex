@@ -110,7 +110,7 @@ network_init(void)
 #   endif
 
 #   if defined(IPV6_STATIC_SUPPORT) && defined(TFTPOMATIC_SUPPORT)
-    const unsigned char *filename = CONF_TFTP_IMAGE;
+    const char *filename = CONF_TFTP_IMAGE;
     set_CONF_TFTP_IP(&ip);
 
     tftp_fire_tftpomatic(&ip, filename);
@@ -138,6 +138,11 @@ network_init(void)
 #   else
     uip_arp_init();
 #   endif
+#   else /* ETHERNET_SUPPORT */
+    /* set at least fixed default gateway address
+     * to allow multi stack routing */
+    set_CONF_ETHERRAPE_GATEWAY(&ip);
+    uip_setdraddr(&ip);
 #   endif  /* ETHERNET_SUPPORT */
 
 }

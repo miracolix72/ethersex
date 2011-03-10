@@ -36,9 +36,9 @@
                         255 - PORTIO_MASK_D   /* port d from pinning.m4 */ \
                        }
 
-/* ATMega644 | ATMega32 */
+/* ATMega644 (644p)| ATMega32*/
 #elif defined(_ATMEGA644) || defined(_ATMEGA32) || defined(_ATMEGA162) \
-  || defined(_ATMEGA16)
+    || defined(_ATMEGA16) || defined(_ATMEGA1284P)
 
 
 #define IO_HARD_PORTS 4
@@ -68,6 +68,25 @@
                         255 - PORTIO_MASK_E , /* port e from pinning.m4 */ \
                         255 - PORTIO_MASK_F   /* port f from pinning.m4 */ \
                        }
+
+/* ATMega169 */
+#elif defined(_ATMEGA169)
+
+
+#define IO_HARD_PORTS 7
+#define IO_DDR_ARRAY {&DDRA, &DDRB, &DDRC, &DDRD, &DDRE, &DDRF, &DDRG}
+#define IO_PORT_ARRAY {&PORTA, &PORTB, &PORTC, &PORTD, &PORTE, &PORTF, &PORTG}
+#define IO_PIN_ARRAY {&PINA, &PINB, &PINC, &PIND, &PINE, &PINF, &PING}
+#define IO_MASK_ARRAY {                                              \
+                        255 - PORTIO_MASK_A , /* port a from pinning.m4 */ \
+                        255 - PORTIO_MASK_B , /* port b from pinning.m4 */ \
+                        255 - PORTIO_MASK_C , /* port c from pinning.m4 */ \
+                        255 - PORTIO_MASK_D , /* port d from pinning.m4 */ \
+                        255 - PORTIO_MASK_E , /* port e from pinning.m4 */ \
+                        255 - PORTIO_MASK_F , /* port f from pinning.m4 */ \
+                        255 - PORTIO_MASK_G   /* port g from pinning.m4 */ \
+                       }
+
 
 #else
 #error "unknown CPU!"

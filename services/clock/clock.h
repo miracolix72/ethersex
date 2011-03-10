@@ -25,19 +25,16 @@
 #define _CLOCK_H
 
 #include <inttypes.h>
+#include "config.h"
 
 #if defined(atmega128)
 
 #define CLOCK_TIMER_AS AS0
-#define CLOCK_TIMER_TIFR _TIFR_TIMER0
-#define CLOCK_TIMER_TIMSK _TIMSK_TIMER0
-#define CLOCK_TIMER_TCCR TCCR0
-#define CLOCK_TIMER_CNT TCNT0
-#define CLOCK_TIMER_ENABLE TOIE0
-#define CLOCK_TIMER_OVERFLOW TOV0
-#define CLOCK_SIG SIG_OVERFLOW0
-#define CLOCK_SELECT_2 CS02
-#define CLOCK_SELECT_0 CS00
+#define CLOCK_INT_OVERFLOW_CLR TC0_INT_OVERFLOW_CLR
+#define CLOCK_INT_OVERFLOW_ON TC0_INT_OVERFLOW_ON
+#define CLOCK_TIMER_PRESCALER_64 TC0_PRESCALER_64
+#define CLOCK_TIMER_CNT TC0_COUNTER_CURRENT
+#define CLOCK_SIG TC0_VECTOR_OVERFLOW
 #define CLOCK_TIMER_NBUSY TCN0UB
 #define CLOCK_TIMER_RBUSY TCR0UB
 
@@ -45,15 +42,11 @@
 
 /* Here we define to use the timer2 */
 #define CLOCK_TIMER_AS AS2
-#define CLOCK_TIMER_TIFR _TIFR_TIMER2
-#define CLOCK_TIMER_TIMSK _TIMSK_TIMER2
-#define CLOCK_TIMER_TCCR _TCCR2_PRESCALE
-#define CLOCK_TIMER_CNT TCNT2
-#define CLOCK_TIMER_ENABLE TOIE2
-#define CLOCK_TIMER_OVERFLOW TOV2
-#define CLOCK_SIG SIG_OVERFLOW2
-#define CLOCK_SELECT_2 CS22
-#define CLOCK_SELECT_0 CS20
+#define CLOCK_INT_OVERFLOW_CLR TC2_INT_OVERFLOW_CLR
+#define CLOCK_INT_OVERFLOW_ON TC2_INT_OVERFLOW_ON
+#define CLOCK_TIMER_PRESCALER_64 TC2_PRESCALER_64
+#define CLOCK_TIMER_CNT TC2_COUNTER_CURRENT
+#define CLOCK_SIG TC2_VECTOR_OVERFLOW
 #define CLOCK_TIMER_NBUSY TCN2UB
 #ifdef TCR2BUB
 #  define CLOCK_TIMER_RBUSY TCR2BUB
@@ -90,10 +83,28 @@ uint32_t clock_get_time(void);
 /* when was the clock synced the last time (unix timestamp) */
 uint32_t clock_last_sync(void);
 
+/* when was the clock synced the last time (ticks) */
+uint32_t clock_last_s_tick(void);
+
+/* last delta time (from unix timestamp) */
+int16_t clock_last_delta(void);
+
+/* DCF syncs in Folge */
+uint16_t clock_dcf_count(void);
+void set_dcf_count(uint16_t new_dcf_count);
+
+/* NTP syncs in Folge */
+uint16_t clock_ntp_count(void);
+void set_ntp_count(uint16_t new_ntp_count);
+
+/* the actual ntp_timer */
+uint16_t clock_last_ntp(void);
+
 /* when was the device booted (unix timestamp) */
 uint32_t clock_get_startup(void);
 
 /* the actual time */
+void clock_set_time_raw(uint32_t new_sync_timestamp);
 void clock_set_time(uint32_t new_sync_timestamp);
 
 /** convert time in timestamp to a datetime struct */
@@ -103,6 +114,10 @@ void clock_localtime(struct clock_datetime_t *d, uint32_t timestamp);
 /** convert current time to a datetime struct */
 #define clock_current_datetime(d) clock_datetime(d, clock_get_time())
 #define clock_current_localtime(d) clock_localtime(d, clock_get_time())
+
+#if TIMEZONE == TIMEZONE_CEST
+int8_t last_sunday_in_month(uint8_t day, uint8_t dow);
+#endif
 
 /** convert a datetime struct to timestamp  */
 uint32_t clock_utc2timestamp(struct clock_datetime_t *d, uint8_t cest);
